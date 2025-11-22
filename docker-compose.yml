@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: synapse
+    restart: unless-stopped
+    volumes:
+      - ./data/synapse:/data
+    depends_on:
+      - postgres
+    networks:
+      - matrix-net
+
+  postgres:
+    build:
+      context: .docker/postgres
+      dockerfile: Dockerfile
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      LANG: C
+      LC_ALL: C
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./data/postgres/database:/var/lib/postgresql/data
+    networks:
+      - matrix-net
+
+  element:
+    build:
+      context: .docker/element
+      dockerfile: Dockerfile
+    container_name: element
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN}
+      SERVER_NAME: ${SERVER_NAME}
+    networks:
+      - matrix-net
+
+  nginx:
+    build:
+      context: .docker/nginx
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: nginx
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - 443:443
+    depends_on:
+      - synapse
+      - element
+    networks:
+      - matrix-net
+      - proxy-net
+
+networks:
+  matrix-net:
+    driver: bridge
+  proxy-net:
+    driver: bridge

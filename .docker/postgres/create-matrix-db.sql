@@ -1,0 +1,5 @@
+CREATE DATABASE matrix_db
+  ENCODING 'UTF8'
+  LC_COLLATE 'C'
+  LC_CTYPE 'C'
+  TEMPLATE template0;
